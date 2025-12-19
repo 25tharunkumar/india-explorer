@@ -1,54 +1,29 @@
-import { useState, useMemo } from 'react';
-import { Compass, Download, Share2 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { useMemo } from 'react';
+import { Compass, Share2, Heart } from 'lucide-react';
 import Header from '@/components/Header';
 import TimelinePlanner from '@/components/TimelinePlanner';
-import EventBadge from '@/components/EventBadge';
-import { statesData, Event } from '@/data/statesData';
+import MyEventsSummary from '@/components/MyEventsSummary';
+import { useMyEvents } from '@/hooks/useMyEvents';
 import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/hooks/use-toast';
 
 const Itinerary = () => {
-  const [selectedState, setSelectedState] = useState<string>(statesData[0].id);
-  const [selectedEvents, setSelectedEvents] = useState<Set<string>>(new Set());
+  const {
+    selectedEvents,
+    optimalEvents,
+    skippedEvents,
+    viewMode,
+    hasConflicts,
+    conflicts,
+  } = useMyEvents();
 
-  const state = statesData.find((s) => s.id === selectedState);
-  const events = state?.events || [];
-
-  // Events for the timeline (either selected or all if none selected)
+  // Events for the timeline based on view mode
   const timelineEvents = useMemo(() => {
-    if (selectedEvents.size === 0) return events;
-    return events.filter((e) => selectedEvents.has(e.id));
-  }, [events, selectedEvents]);
-
-  const toggleEvent = (eventId: string) => {
-    const newSelected = new Set(selectedEvents);
-    if (newSelected.has(eventId)) {
-      newSelected.delete(eventId);
-    } else {
-      newSelected.add(eventId);
-    }
-    setSelectedEvents(newSelected);
-  };
-
-  const selectAll = () => {
-    setSelectedEvents(new Set(events.map((e) => e.id)));
-  };
-
-  const clearSelection = () => {
-    setSelectedEvents(new Set());
-  };
+    return viewMode === 'optimal' ? optimalEvents : selectedEvents;
+  }, [viewMode, optimalEvents, selectedEvents]);
 
   const handleShare = () => {
-    const text = `Check out my ${state?.name} travel itinerary on BharatDarshan!`;
+    const text = `Check out my India travel itinerary with ${selectedEvents.length} events on BharatDarshan!`;
     if (navigator.share) {
       navigator.share({ title: 'My India Itinerary', text });
     } else {
@@ -73,98 +48,88 @@ const Itinerary = () => {
             </div>
             <div>
               <h1 className="font-display text-3xl font-bold text-foreground">
-                Itinerary Planner
+                My Events
               </h1>
               <p className="text-muted-foreground">
-                Create your personalized travel schedule
+                Your personalized travel schedule with conflict detection
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Select value={selectedState} onValueChange={(v) => {
-              setSelectedState(v);
-              setSelectedEvents(new Set());
-            }}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Select state" />
-              </SelectTrigger>
-              <SelectContent>
-                {statesData.map((state) => (
-                  <SelectItem key={state.id} value={state.id}>
-                    {state.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Button variant="subtle" onClick={handleShare} className="gap-2">
+            <Share2 className="w-4 h-4" />
+            Share
+          </Button>
+        </div>
 
-            <Button variant="subtle" onClick={handleShare} className="gap-2">
-              <Share2 className="w-4 h-4" />
-              Share
+        {selectedEvents.length === 0 ? (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-6">
+              <Heart className="w-10 h-10 text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-2xl font-semibold mb-2">No Events Selected</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Start adding events to your list by clicking the "Add" button on any event across the site. 
+              Your selections will appear here for planning.
+            </p>
+            <Button asChild variant="default">
+              <a href="/events">Browse Events</a>
             </Button>
           </div>
-        </div>
+        ) : (
+          <div className="grid lg:grid-cols-3 gap-10">
+            {/* Summary Panel */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                <MyEventsSummary />
 
-        <div className="grid lg:grid-cols-3 gap-10">
-          {/* Event Selection */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="font-semibold">Select Events</h2>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={selectAll}>
-                    All
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={clearSelection}>
-                    Clear
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2">
-                {events.map((event) => (
-                  <div
-                    key={event.id}
-                    className="flex items-start gap-3 p-3 rounded-lg bg-card border hover:border-primary/30 transition-colors cursor-pointer"
-                    onClick={() => toggleEvent(event.id)}
-                  >
-                    <Checkbox
-                      checked={selectedEvents.has(event.id)}
-                      onCheckedChange={() => toggleEvent(event.id)}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-sm">{event.title}</p>
-                        <EventBadge type={event.type} />
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {format(parseISO(event.startDate), 'MMM d')} • {event.time}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {event.location}
-                      </p>
+                {/* Skipped Events (when in optimal view) */}
+                {viewMode === 'optimal' && skippedEvents.length > 0 && (
+                  <div className="rounded-xl border bg-card p-4">
+                    <h3 className="font-medium text-sm mb-3 text-muted-foreground">
+                      Skipped Events ({skippedEvents.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {skippedEvents.map((event) => (
+                        <div
+                          key={event.id}
+                          className="p-2 rounded-lg bg-muted/50 opacity-60"
+                        >
+                          <p className="text-sm font-medium line-through">
+                            {event.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {event.location}
+                          </p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
 
-              <p className="text-sm text-muted-foreground text-center">
-                {selectedEvents.size === 0
-                  ? 'Showing all events'
-                  : `${selectedEvents.size} events selected`}
-              </p>
+                {/* Tips */}
+                <div className="rounded-xl border bg-gradient-to-br from-primary/5 to-accent/5 p-4">
+                  <h3 className="font-medium text-sm mb-2">💡 Planning Tips</h3>
+                  <ul className="text-xs text-muted-foreground space-y-1.5">
+                    <li>• Events are grouped by date for easy planning</li>
+                    <li>• Red indicators show time conflicts</li>
+                    <li>• Use "Optimal Plan" to auto-resolve conflicts</li>
+                    <li>• Export your itinerary to share or print</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Timeline View */}
+            <div className="lg:col-span-2">
+              <TimelinePlanner
+                events={timelineEvents}
+                conflicts={conflicts}
+                viewMode={viewMode}
+              />
             </div>
           </div>
-
-          {/* Timeline View */}
-          <div className="lg:col-span-2">
-            <TimelinePlanner
-              events={timelineEvents}
-              stateName={state?.name || ''}
-            />
-          </div>
-        </div>
+        )}
       </div>
     </div>
   );
