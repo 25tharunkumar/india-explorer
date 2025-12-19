@@ -1,18 +1,28 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, MapPin, Calendar, Compass } from 'lucide-react';
+import { Menu, X, MapPin, Calendar, Compass, Heart, LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useMyEvents } from '@/hooks/useMyEvents';
+
+interface NavLink {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  badge?: number;
+  hasWarning?: boolean;
+}
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { totalEventsCount, hasConflicts } = useMyEvents();
 
-  const navLinks = [
+  const navLinks: NavLink[] = [
     { href: '/', label: 'Home', icon: Compass },
     { href: '/states', label: 'Explore States', icon: MapPin },
     { href: '/events', label: 'Events', icon: Calendar },
-    { href: '/itinerary', label: 'Itinerary', icon: Calendar },
+    { href: '/itinerary', label: 'My Events', icon: Heart, badge: totalEventsCount, hasWarning: hasConflicts },
   ];
 
   return (
@@ -37,12 +47,22 @@ const Header = () => {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "gap-2 font-medium",
+                    "gap-2 font-medium relative",
                     isActive && "bg-secondary text-primary"
                   )}
                 >
                   <Icon className="w-4 h-4" />
                   {link.label}
+                  {link.badge && link.badge > 0 && (
+                    <span className={cn(
+                      "absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full text-[10px] font-bold flex items-center justify-center",
+                      link.hasWarning 
+                        ? "bg-destructive text-destructive-foreground" 
+                        : "bg-primary text-primary-foreground"
+                    )}>
+                      {link.badge}
+                    </span>
+                  )}
                 </Button>
               </Link>
             );
@@ -76,12 +96,22 @@ const Header = () => {
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start gap-3",
+                      "w-full justify-start gap-3 relative",
                       isActive && "bg-secondary text-primary"
                     )}
                   >
                     <Icon className="w-4 h-4" />
                     {link.label}
+                    {link.badge && link.badge > 0 && (
+                      <span className={cn(
+                        "ml-auto min-w-[20px] h-[20px] rounded-full text-[11px] font-bold flex items-center justify-center",
+                        link.hasWarning 
+                          ? "bg-destructive text-destructive-foreground" 
+                          : "bg-primary text-primary-foreground"
+                      )}>
+                        {link.badge}
+                      </span>
+                    )}
                   </Button>
                 </Link>
               );

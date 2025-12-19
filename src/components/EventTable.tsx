@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
 import { format, parseISO, differenceInDays, differenceInHours } from 'date-fns';
-import { ArrowUpDown, Clock, MapPin } from 'lucide-react';
+import { ArrowUpDown, Clock, MapPin, Calendar } from 'lucide-react';
 import { Event, eventTypes } from '@/data/statesData';
 import EventBadge from '@/components/EventBadge';
+import AddToMyEventsButton from '@/components/AddToMyEventsButton';
+import ConflictBadge from '@/components/ConflictBadge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -20,19 +22,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { useMyEvents } from '@/hooks/useMyEvents';
 
 interface EventTableProps {
   events: Event[];
   showFilters?: boolean;
+  showAddButton?: boolean;
 }
 
 type SortField = 'title' | 'startDate' | 'type' | 'location';
 type SortOrder = 'asc' | 'desc';
 
-const EventTable = ({ events, showFilters = true }: EventTableProps) => {
+const EventTable = ({ events, showFilters = true, showAddButton = true }: EventTableProps) => {
   const [sortField, setSortField] = useState<SortField>('startDate');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
   const [typeFilter, setTypeFilter] = useState<string>('all');
+  
+  const { isSelected, conflicts } = useMyEvents();
+
+  // Get conflict info for an event
+  const getEventConflict = (eventId: string) => {
+    return conflicts.find(c => c.eventId === eventId);
+  };
 
   const filteredAndSortedEvents = useMemo(() => {
     let filtered = events;
@@ -140,19 +151,39 @@ const EventTable = ({ events, showFilters = true }: EventTableProps) => {
                 <SortButton field="type">Type</SortButton>
               </TableHead>
               <TableHead className="text-right">Countdown</TableHead>
+              {showAddButton && <TableHead className="w-[120px]"></TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredAndSortedEvents.map((event) => {
               const countdown = getCountdown(event.startDate);
               const isEnded = countdown === 'Ended';
+              const selected = isSelected(event.id);
+              const conflict = getEventConflict(event.id);
               
               return (
-                <TableRow key={event.id} className={cn(isEnded && "opacity-60")}>
+                <TableRow 
+                  key={event.id} 
+                  className={cn(
+                    isEnded && "opacity-60",
+                    selected && "bg-primary/5",
+                    conflict && "bg-destructive/5 border-l-2 border-l-destructive"
+                  )}
+                >
                   <TableCell>
-                    <div>
-                      <p className="font-medium">{event.title}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{event.title}</p>
+                          {conflict && (
+                            <ConflictBadge 
+                              conflictCount={conflict.conflictsWith.length}
+                              conflictingEvents={conflict.conflictsWith}
+                            />
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -181,6 +212,11 @@ const EventTable = ({ events, showFilters = true }: EventTableProps) => {
                       {countdown}
                     </span>
                   </TableCell>
+                  {showAddButton && (
+                    <TableCell>
+                      <AddToMyEventsButton event={event} variant="compact" />
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}
@@ -192,6 +228,3 @@ const EventTable = ({ events, showFilters = true }: EventTableProps) => {
 };
 
 export default EventTable;
-
-// Import Calendar icon
-import { Calendar } from 'lucide-react';
