@@ -14,16 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      owner_events: {
+        Row: {
+          admin_notes: string | null
+          category: Database["public"]["Enums"]["event_category"]
+          city: string
+          created_at: string
+          description: string | null
+          end_date: string
+          event_name: string
+          event_type: Database["public"]["Enums"]["event_type"]
+          id: string
+          owner_id: string
+          priority: Database["public"]["Enums"]["priority_level"]
+          start_date: string
+          state: string
+          status: Database["public"]["Enums"]["event_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: Database["public"]["Enums"]["event_category"]
+          city: string
+          created_at?: string
+          description?: string | null
+          end_date: string
+          event_name: string
+          event_type?: Database["public"]["Enums"]["event_type"]
+          id?: string
+          owner_id: string
+          priority?: Database["public"]["Enums"]["priority_level"]
+          start_date: string
+          state: string
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: Database["public"]["Enums"]["event_category"]
+          city?: string
+          created_at?: string
+          description?: string | null
+          end_date?: string
+          event_name?: string
+          event_type?: Database["public"]["Enums"]["event_type"]
+          id?: string
+          owner_id?: string
+          priority?: Database["public"]["Enums"]["priority_level"]
+          start_date?: string
+          state?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          organization: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          organization?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          organization?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "event_owner" | "tourist"
+      event_category:
+        | "festival"
+        | "cultural"
+        | "religious"
+        | "exhibition"
+        | "entertainment"
+      event_status: "pending" | "approved" | "rejected"
+      event_type: "fixed_time" | "flexible_time"
+      priority_level: "high" | "medium" | "low"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +273,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "event_owner", "tourist"],
+      event_category: [
+        "festival",
+        "cultural",
+        "religious",
+        "exhibition",
+        "entertainment",
+      ],
+      event_status: ["pending", "approved", "rejected"],
+      event_type: ["fixed_time", "flexible_time"],
+      priority_level: ["high", "medium", "low"],
+    },
   },
 } as const
